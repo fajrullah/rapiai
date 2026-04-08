@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pymupdf
+langchain-text-splitters
+sentence-transformers
+chromadb
+python-multipart
+pydantic-settings
