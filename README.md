@@ -1,6 +1,19 @@
-# RAG Service (FastAPI)
+# 🗂️ RapiAI — Turn Messy Documents into Clear Answers
 
-A lightweight RAG microservice — PDF ingestion, ChromaDB vector storage, and retrieval — designed to pair with an existing Node.js chat backend.
+> Stop digging through messy PDFs. Just ask.
+
+RapiAI is an AI-powered RAG (Retrieval-Augmented Generation) application 
+that lets you upload messy, unstructured documents and chat with them 
+using natural language. Get precise answers with source citations — 
+no more manual reading.
+
+## 🎯 The Problem
+We deal with messy documents every day — long PDFs, unstructured reports, 
+scattered files. Finding the right information wastes hours.
+
+## ✅ The Solution
+Upload your documents to RapiAI, ask anything, and get clear answers 
+instantly — with references to the exact source.
 
 ## Setup
 
