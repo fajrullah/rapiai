@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from config import settings
-from ingest import ingest_pdf, delete_document, list_documents
+from ingest import ingest_pdf, delete_document, list_documents, peek_chunks, get_document_chunks
 from retriever import retrieve
 from prompt_builder import build_prompt
 
@@ -98,3 +98,23 @@ def remove_document(doc_id: str):
     if deleted == 0:
         raise HTTPException(status_code=404, detail="Document not found.")
     return {"doc_id": doc_id, "deleted_chunks": deleted}
+
+
+@app.get("/chunks")
+def list_chunks(limit: int = 10):
+    """
+    Peek into the database to see stored chunks.
+    Useful for debugging what exactly is stored in ChromaDB.
+    """
+    return {"chunks": peek_chunks(limit)}
+
+
+@app.get("/documents/{doc_id}/chunks")
+def list_document_chunks(doc_id: str):
+    """
+    List all chunks for a specific document.
+    """
+    chunks = get_document_chunks(doc_id)
+    if not chunks:
+        raise HTTPException(status_code=404, detail="Document not found or has no chunks.")
+    return {"doc_id": doc_id, "chunks": chunks}

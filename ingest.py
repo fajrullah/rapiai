@@ -49,18 +49,55 @@ def extract_text_from_pdf(pdf_path: str) -> list[dict]:
     doc.close()
     return pages
 
+def extract_header(text: str) -> str:
+    """Extract the first header-like line from a page."""
+    for line in text.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        # Header = short line, no period at end, title/uppercase
+        if len(line) < 100 and not line.endswith(".") and not line.endswith(","):
+            return line
+    return ""
 
 def chunk_pages(pages: list[dict]) -> list[dict]:
-    """Split page texts into smaller overlapping chunks."""
+    """Split page texts into smaller overlapping chunks with contextual headers."""
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
+        separators=["\n\n", "\n", ". ", "! ", "? ", " ", ""],
     )
+
     chunks = []
+    current_header = ""
+
     for page in pages:
-        splits = splitter.split_text(page["text"])
+        text = page["text"].strip()
+        if not text:
+            continue
+
+        # Update header if this page has one
+        detected_header = extract_header(text)
+        if detected_header:
+            current_header = detected_header
+
+        splits = splitter.split_text(text)
+
         for idx, split in enumerate(splits):
-            chunks.append({"page": page["page"], "chunk_index": idx, "text": split})
+            # Prepend header context to each chunk
+            enriched_text = (
+                f"[{current_header}]\n{split}"
+                if current_header and current_header not in split
+                else split
+            )
+
+            chunks.append({
+                "page": page["page"],
+                "chunk_index": idx,
+                "text": enriched_text,
+                "header": current_header,  # store for debugging/metadata
+            })
+
     return chunks
 
 
@@ -136,3 +173,40 @@ def list_documents() -> list[dict]:
         if doc_id not in seen:
             seen[doc_id] = {"doc_id": doc_id, "filename": meta["filename"]}
     return list(seen.values())
+
+
+def peek_chunks(limit: int = 10) -> list[dict]:
+    """
+    Peek into the database to see the first few chunks, their text, and metadata.
+    """
+    collection = get_collection()
+    results = collection.get(limit=limit, include=["documents", "metadatas"])
+
+    chunks = []
+    for i in range(len(results["ids"])):
+        chunks.append({
+            "id": results["ids"][i],
+            "document": results["documents"][i],
+            "metadata": results["metadatas"][i],
+        })
+    return chunks
+
+
+def get_document_chunks(doc_id: str) -> list[dict]:
+    """
+    Retrieve all chunks for a specific document.
+    """
+    collection = get_collection()
+    results = collection.get(
+        where={"doc_id": doc_id},
+        include=["documents", "metadatas"]
+    )
+
+    chunks = []
+    for i in range(len(results["ids"])):
+        chunks.append({
+            "id": results["ids"][i],
+            "document": results["documents"][i],
+            "metadata": results["metadatas"][i],
+        })
+    return chunks
