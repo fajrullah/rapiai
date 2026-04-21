@@ -1,5 +1,6 @@
 import uuid
 import os
+import time
 import fitz  # PyMuPDF
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
@@ -50,13 +51,18 @@ def extract_text_from_pdf(pdf_path: str) -> list[dict]:
     return pages
 
 def extract_header(text: str) -> str:
-    """Extract the first header-like line from a page."""
     for line in text.split("\n"):
         line = line.strip()
         if not line:
             continue
-        # Header = short line, no period at end, title/uppercase
-        if len(line) < 100 and not line.endswith(".") and not line.endswith(","):
+        # Must be short AND look like a title (not a sentence)
+        word_count = len(line.split())
+        is_title_case = line.istitle() or line.isupper()
+        is_short = len(line) < 60
+        has_no_sentence_end = not line.endswith((".","," , ":", ";"))
+        is_not_sentence = word_count <= 6  # titles are short!
+
+        if is_short and has_no_sentence_end and is_not_sentence:
             return line
     return ""
 
@@ -135,6 +141,7 @@ def ingest_pdf(pdf_path: str, filename: str) -> dict:
             "filename": filename,
             "page": c["page"],
             "chunk_index": c["chunk_index"],
+            "timestamp": time.time(),
         }
         for c in chunks
     ]
@@ -177,10 +184,12 @@ def list_documents() -> list[dict]:
 
 def peek_chunks(limit: int = 10) -> list[dict]:
     """
-    Peek into the database to see the first few chunks, their text, and metadata.
+    Peek into the database to see the latest chunks stored.
     """
     collection = get_collection()
-    results = collection.get(limit=limit, include=["documents", "metadatas"])
+    # We fetch all chunks to sort them by timestamp in Python.
+    # Note: For very large collections, this should be optimized.
+    results = collection.get(include=["documents", "metadatas"])
 
     chunks = []
     for i in range(len(results["ids"])):
@@ -189,7 +198,14 @@ def peek_chunks(limit: int = 10) -> list[dict]:
             "document": results["documents"][i],
             "metadata": results["metadatas"][i],
         })
-    return chunks
+
+    # Sort by timestamp (descending) if timestamp exists in metadata
+    chunks.sort(
+        key=lambda x: x["metadata"].get("timestamp", 0),
+        reverse=True
+    )
+
+    return chunks[:limit]
 
 
 def get_document_chunks(doc_id: str) -> list[dict]:
