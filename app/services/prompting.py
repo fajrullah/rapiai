@@ -1,12 +1,5 @@
 def build_prompt(query: str, chunks: list[dict]) -> dict:
-    """
-    Assemble a prompt payload ready to send to your HuggingFace LLM.
-
-    Returns a dict with:
-      - system_prompt: context-injected instruction for the LLM
-      - user_message:  the original user question
-      - sources:       list of source references for the frontend to display
-    """
+    """Assemble a prompt payload ready to send to an LLM."""
     if not chunks:
         context = "No relevant context found in the uploaded documents."
     else:
