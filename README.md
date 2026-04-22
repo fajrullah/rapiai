@@ -18,12 +18,11 @@ instantly — with references to the exact source.
 ## Setup
 
 ```bash
-cd rag-service
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 ## Endpoints
@@ -63,12 +62,14 @@ const { system_prompt, user_message, sources } = await res.json();
 ## Project structure
 
 ```
-rag-service/
-├── main.py            # FastAPI app & routes
-├── ingest.py          # PDF parse → chunk → embed → ChromaDB
-├── retriever.py       # Query embed → ChromaDB similarity search
-├── prompt_builder.py  # Assemble context + question into LLM prompt
-├── config.py          # Settings (model, paths, chunk size)
+rag-pipeline/
+├── app/
+│   ├── main.py         # Entry point (FastAPI initialization)
+│   ├── api/            # API Endpoints & schemas
+│   ├── core/           # Configuration & database singletons
+│   └── services/       # RAG logic (ingestion, retrieval, prompting)
+├── data/               # Persistent storage (chroma_db)
+├── docs/               # Document storage
 ├── requirements.txt
-└── .env.example
+└── .env
 ```
