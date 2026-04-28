@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 import time
 import fitz  # PyMuPDF
@@ -70,6 +71,16 @@ def chunk_pages(pages: list[dict]) -> list[dict]:
 
 def ingest_pdf(pdf_path: str, filename: str) -> dict:
     """The full RAG ingestion pipeline for a PDF."""
+    hasher = hashlib.md5()
+    with open(pdf_path, 'rb') as f:
+        hasher.update(f.read())
+    doc_hash = hasher.hexdigest()
+
+    collection = get_collection()
+    existing = collection.get(where={"doc_hash": doc_hash})
+    if existing and existing.get("ids"):
+        return {"status": "skipped", "message": "Document already uploaded"}
+
     doc_id = str(uuid.uuid4())
 
     pages = extract_text_from_pdf(pdf_path)
@@ -82,12 +93,12 @@ def ingest_pdf(pdf_path: str, filename: str) -> dict:
     texts = [c["text"] for c in chunks]
     embeddings = embedder.encode(texts, show_progress_bar=False).tolist()
 
-    collection = get_collection()
     ids = [f"{doc_id}_{i}" for i in range(len(chunks))]
     metadatas = [
         {
             "doc_id": doc_id,
             "filename": filename,
+            "doc_hash": doc_hash,
             "page": c["page"],
             "chunk_index": c["chunk_index"],
             "timestamp": time.time(),
