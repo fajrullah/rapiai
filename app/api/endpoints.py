@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, UploadFile, HTTPException
 from app.api.schemas import RetrieveRequest, RetrieveResponse, PromptRequest
 from app.core.config import settings
 from app.services.ingestion import ingest_pdf, delete_document, list_documents, peek_chunks, get_document_chunks
-from app.services.retrieval import retrieve
+from app.services.retrieval import retrieve, compress_chunk
 from app.services.prompting import build_prompt
 
 router = APIRouter()
@@ -39,8 +39,14 @@ def retrieve_chunks(body: RetrieveRequest):
 @router.post("/prompt")
 def build_rag_prompt(body: PromptRequest):
     chunks = retrieve(query=body.query, top_k=body.top_k, doc_id=body.doc_id)
+
+    # Compress each chunk — keep only query-relevant sentences
+    for chunk in chunks:
+        chunk["text"] = compress_chunk(query=body.query, chunk_text=chunk["text"])
+
     prompt = build_prompt(query=body.query, chunks=chunks)
     return prompt
+
 
 @router.get("/documents")
 def get_documents():
