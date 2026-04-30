@@ -2,7 +2,7 @@
 
 Tests cover:
 - POST /ingest: file upload, validation, deduplication
-- POST /prompt: prompt building pipeline
+- POST /prompt: full RAG pipeline with LLM answer generation
 - POST /retrieve: chunk retrieval
 - GET /health: health check
 - GET /documents: list documents
@@ -109,21 +109,24 @@ class TestPromptEndpoint:
     @patch("app.api.endpoints.compress_chunk")
     @patch("app.api.endpoints.retrieve")
     def test_prompt_pipeline(self, mock_retrieve, mock_compress, mock_build):
+        """Full pipeline: retrieve → compress → build_prompt (includes LLM answer)."""
         mock_retrieve.return_value = [
             {"text": "Revenue grew 20%.", "filename": "report.pdf", "page": 1, "doc_id": "d1", "score": 0.9},
         ]
         mock_compress.return_value = "Revenue grew 20%."
         mock_build.return_value = {
-            "system_prompt": "You are a helpful assistant...",
+            "answer": "Revenue grew by 20% last quarter.",
+            "system_prompt": "You are a helpful assistant...\n\nContext:\nRevenue grew 20%.",
             "user_message": "What is the revenue?",
             "sources": [{"filename": "report.pdf", "page": 1, "score": 0.9}],
         }
+
         response = client.post("/prompt", json={"query": "What is the revenue?"})
         assert response.status_code == 200
         data = response.json()
-        assert "system_prompt" in data
+        assert data["answer"] == "Revenue grew by 20% last quarter."
         assert "user_message" in data
-        assert "sources" in data
+        assert len(data["sources"]) == 1
         mock_retrieve.assert_called_once()
         mock_compress.assert_called_once()
         mock_build.assert_called_once()
@@ -131,19 +134,25 @@ class TestPromptEndpoint:
     @patch("app.api.endpoints.build_prompt")
     @patch("app.api.endpoints.retrieve")
     def test_prompt_no_results(self, mock_retrieve, mock_build):
+        """When no chunks found, build_prompt still returns an answer."""
         mock_retrieve.return_value = []
         mock_build.return_value = {
+            "answer": "I don't have enough context to answer that.",
             "system_prompt": "No relevant context found.",
             "user_message": "Unknown query",
             "sources": [],
         }
+
         response = client.post("/prompt", json={"query": "Unknown query"})
         assert response.status_code == 200
-        assert response.json()["sources"] == []
+        data = response.json()
+        assert data["answer"]
+        assert data["sources"] == []
 
     def test_prompt_missing_query(self):
         response = client.post("/prompt", json={})
         assert response.status_code == 422
+
 
 
 class TestDocumentsEndpoint:

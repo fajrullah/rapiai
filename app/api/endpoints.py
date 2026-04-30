@@ -38,14 +38,14 @@ def retrieve_chunks(body: RetrieveRequest):
 
 @router.post("/prompt")
 def build_rag_prompt(body: PromptRequest):
+    """Full RAG pipeline: retrieve → compress → prompt → LLM answer."""
     chunks = retrieve(query=body.query, top_k=body.top_k, doc_id=body.doc_id)
 
     # Compress each chunk — keep only query-relevant sentences
     for chunk in chunks:
         chunk["text"] = compress_chunk(query=body.query, chunk_text=chunk["text"])
 
-    prompt = build_prompt(query=body.query, chunks=chunks)
-    return prompt
+    return build_prompt(query=body.query, chunks=chunks)
 
 
 @router.get("/documents")

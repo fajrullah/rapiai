@@ -32,9 +32,40 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 | GET | `/health` | Health check |
 | POST | `/ingest` | Upload a PDF (multipart/form-data) |
 | POST | `/retrieve` | Get top-K chunks for a query |
-| POST | `/prompt` | Retrieve + build full LLM prompt (one call) |
+| POST | `/prompt` | Full RAG pipeline: retrieve + prompt + LLM answer |
 | GET | `/documents` | List ingested documents |
 | DELETE | `/documents/{doc_id}` | Remove a document |
+
+### POST /prompt — Example
+
+```bash
+curl -X POST http://localhost:8001/prompt \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is the revenue growth?", "top_k": 4}'
+```
+
+Response:
+```json
+{
+  "answer": "Revenue grew by 20% last quarter...",
+  "user_message": "What is the revenue growth?",
+  "sources": [{"filename": "report.pdf", "page": 1, "score": 0.92}]
+}
+```
+
+## LLM Configuration
+
+The `/prompt` endpoint uses **HuggingFace Inference API** to generate answers. Configure in `.env`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LLM_MODEL` | `meta-llama/Llama-3.1-8B-Instruct` | HuggingFace model for answer generation |
+| `LLM_MAX_TOKENS` | `512` | Maximum tokens in the generated answer |
+| `LLM_TEMPERATURE` | `0.7` | Sampling temperature (0 = deterministic, 1 = creative) |
+| `HF_TOKEN` | — | Your HuggingFace API token (required) |
+
+> **Note**: `meta-llama/Llama-3.1-8B-Instruct` is a gated model. You must accept the license at [the model page](https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct) before your token can access it.
+
 
 ## How Node.js uses this
 
