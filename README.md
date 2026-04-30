@@ -59,6 +59,66 @@ const { system_prompt, user_message, sources } = await res.json();
 // and stream the response back through WebSocket
 ```
 
+## Testing
+
+### Install test dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run all tests
+
+```bash
+pytest
+```
+
+### Run only unit tests
+
+```bash
+pytest tests/unit/
+```
+
+### Run only integration tests
+
+```bash
+pytest tests/integration/
+```
+
+### Run a specific test file
+
+```bash
+pytest tests/unit/test_ingestion.py
+pytest tests/unit/test_prompting.py
+pytest tests/unit/test_retrieval.py
+pytest tests/integration/test_endpoints.py
+```
+
+### Run with verbose output
+
+```bash
+pytest -v
+```
+
+### Run with coverage (optional — install `pytest-cov` first)
+
+```bash
+pip install pytest-cov
+pytest --cov=app --cov-report=term-missing
+```
+
+### Test structure
+
+```
+tests/
+├── unit/
+│   ├── test_ingestion.py      # extract_header, chunk_pages, ingest_pdf, delete/list ops
+│   ├── test_prompting.py      # build_prompt assembly & formatting
+│   └── test_retrieval.py      # compress_chunk, hybrid retrieve, RRF fusion
+└── integration/
+    └── test_endpoints.py       # All API endpoints via FastAPI TestClient
+```
+
 ## Project structure
 
 ```
@@ -68,6 +128,7 @@ rag-pipeline/
 │   ├── api/            # API Endpoints & schemas
 │   ├── core/           # Configuration & database singletons
 │   └── services/       # RAG logic (ingestion, retrieval, prompting)
+├── tests/              # Unit & integration tests
 ├── data/               # Persistent storage (chroma_db)
 ├── docs/               # Document storage
 ├── requirements.txt
