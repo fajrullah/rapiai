@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # Retrieval settings
     default_top_k: int = 4
 
+    # LLM settings (for answer generation via HuggingFace Inference API)
+    llm_model: str = "meta-llama/Llama-3.1-8B-Instruct"
+    llm_max_tokens: int = 512
+    llm_temperature: float = 0.7
+
     # Temp folder for uploaded PDFs
     tmp_dir: str = "./tmp"
 

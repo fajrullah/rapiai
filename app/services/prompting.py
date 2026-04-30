@@ -1,5 +1,8 @@
+from app.services.generation import generate_answer
+
+
 def build_prompt(query: str, chunks: list[dict]) -> dict:
-    """Assemble a prompt payload ready to send to an LLM."""
+    """Assemble a prompt from retrieved chunks and synthesize an answer via LLM."""
     if not chunks:
         context = "No relevant context found in the uploaded documents."
     else:
@@ -21,8 +24,14 @@ def build_prompt(query: str, chunks: list[dict]) -> dict:
         for c in chunks
     ]
 
+    answer = generate_answer(
+        system_prompt=system_prompt,
+        user_message=query,
+    )
+
     return {
-        "system_prompt": system_prompt,
+        "answer": answer,
         "user_message": query,
         "sources": sources,
     }
+
