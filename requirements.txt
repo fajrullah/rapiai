@@ -8,3 +8,7 @@ python-multipart
 pydantic-settings
 rank_bm25
 langchain-community
+
+# Testing
+pytest
+httpx
